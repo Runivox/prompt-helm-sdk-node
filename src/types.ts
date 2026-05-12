@@ -1,0 +1,64 @@
+export type Environment = "production" | "development";
+
+export interface ExecuteRequest {
+  promptSlug?: string;
+  promptId?: string;
+  variables?: Record<string, string>;
+  system?: string;
+  user?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  stopSequences?: string[];
+  environment?: Environment;
+  timeoutMs?: number;
+}
+
+export interface ExecuteResponse {
+  id: string;
+  output: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  latencyMs: number;
+  cost: number;
+  timestamp: string;
+}
+
+export interface StreamChunkEvent {
+  type: "chunk";
+  content: string;
+}
+
+export interface StreamDoneEvent {
+  type: "done";
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cost: number;
+  model: string;
+  latencyMs: number;
+}
+
+export interface StreamErrorEvent {
+  type: "error";
+  errorCode: string;
+  message: string;
+  requestId?: string;
+}
+
+export type StreamEvent = StreamChunkEvent | StreamDoneEvent | StreamErrorEvent;
+
+export interface ErrorEnvelope {
+  statusCode: number;
+  error: string;
+  message: string;
+  code?: string;
+  correlationId?: string;
+}
+
+export interface RequestOptions {
+  signal?: AbortSignal;
+}

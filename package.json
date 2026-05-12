@@ -1,0 +1,63 @@
+{
+  "name": "@prompthelm/sdk",
+  "version": "0.1.0",
+  "description": "Official Node.js SDK for PromptHelm — call your managed prompts from any application.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "prompthelm",
+    "llm",
+    "ai",
+    "prompt",
+    "sdk",
+    "openai",
+    "anthropic"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Runivox/prompt-helm-sdk-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Runivox/prompt-helm-sdk-node/issues"
+  },
+  "homepage": "https://prompthelm.app",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0",
+    "@vitest/coverage-v8": "^1.4.0",
+    "eslint": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "typescript-eslint": "^8.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
