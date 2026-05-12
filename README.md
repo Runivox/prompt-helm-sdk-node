@@ -1,4 +1,4 @@
-# @prompthelm/sdk
+# @prompt-helm/sdk
 
 Official Node.js SDK for [PromptHelm](https://prompthelm.app) — call your managed prompts from any application.
 
@@ -16,13 +16,13 @@ PromptHelm is an enterprise LLMOps control plane: versioned prompts, encrypted p
 ## Installation
 
 ```bash
-npm install @prompthelm/sdk
+npm install @prompt-helm/sdk
 ```
 
 ## Quickstart
 
 ```ts
-import { PromptHelm } from "@prompthelm/sdk";
+import { PromptHelm } from "@prompt-helm/sdk";
 
 const ph = new PromptHelm({
   apiKey: process.env.PROMPTHELM_API_KEY ?? "<your-api-token>",
@@ -42,7 +42,7 @@ console.log(`Tokens: ${result.totalTokens}, cost: $${result.cost.toFixed(6)}`);
 `stream` returns an async iterable of typed events. The iterator terminates after a `done` event and throws a typed error if the server emits an `error` event.
 
 ```ts
-import { PromptHelm } from "@prompthelm/sdk";
+import { PromptHelm } from "@prompt-helm/sdk";
 
 const ph = new PromptHelm({ apiKey: "<your-api-token>" });
 
@@ -98,7 +98,7 @@ import {
   RateLimitError,
   ApiError,
   TimeoutError,
-} from "@prompthelm/sdk";
+} from "@prompt-helm/sdk";
 
 const ph = new PromptHelm({ apiKey: "<your-api-token>" });
 
@@ -159,7 +159,7 @@ If the server emits `{ type: "error" }`, the iterator throws an `ApiError`. If t
 
 ## Versioning
 
-`@prompthelm/sdk` follows [Semantic Versioning](https://semver.org). Breaking changes will only ship on a major version bump. See the changelog for details.
+`@prompt-helm/sdk` follows [Semantic Versioning](https://semver.org). Breaking changes will only ship on a major version bump. See the changelog for details.
 
 ## License
 

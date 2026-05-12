@@ -264,7 +264,7 @@ export class PromptHelm {
       "content-type": "application/json",
       accept: extra["accept"] ?? "application/json",
       authorization: `Bearer ${this.apiKey}`,
-      "user-agent": "@prompthelm/sdk (node)",
+      "user-agent": "@prompt-helm/sdk (node)",
       ...this.extraHeaders,
     };
   }
