@@ -1,6 +1,6 @@
 {
   "name": "@prompt-helm/sdk",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Official Node.js SDK for PromptHelm — call your managed prompts from any application.",
   "license": "MIT",
   "type": "module",
