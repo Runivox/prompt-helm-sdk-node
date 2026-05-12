@@ -22,6 +22,12 @@ export interface PromptHelmConfig {
   baseURL?: string;
   timeout?: number;
   maxRetries?: number;
+  /**
+   * Prefix appended to the SDK's User-Agent header. Use it to identify the
+   * application or service making the call (helpful when one tenant runs
+   * many apps against the same prompt). Example: `"my-checkout-service/1.4.2"`.
+   */
+  userAgent?: string;
   fetch?: typeof globalThis.fetch;
   headers?: Record<string, string>;
 }
@@ -31,6 +37,7 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_MAX_RETRIES = 2;
 const API_KEY_LENGTH = 36;
 const API_KEY_PREFIX = "phk_";
+const SDK_UA = "@prompt-helm/sdk (node)";
 
 export class PromptHelm {
   private readonly apiKey: string;
@@ -39,6 +46,7 @@ export class PromptHelm {
   private readonly maxRetries: number;
   private readonly fetchFn: typeof globalThis.fetch;
   private readonly extraHeaders: Record<string, string>;
+  private readonly userAgent: string;
 
   public constructor(config: PromptHelmConfig) {
     if (typeof config.apiKey !== "string" || config.apiKey.length === 0) {
@@ -83,6 +91,9 @@ export class PromptHelm {
     this.maxRetries = maxRetries;
     this.fetchFn = fetchImpl;
     this.extraHeaders = config.headers ?? {};
+    this.userAgent = config.userAgent
+      ? `${config.userAgent} ${SDK_UA}`
+      : SDK_UA;
   }
 
   public async execute(
@@ -264,7 +275,7 @@ export class PromptHelm {
       "content-type": "application/json",
       accept: extra["accept"] ?? "application/json",
       authorization: `Bearer ${this.apiKey}`,
-      "user-agent": "@prompt-helm/sdk (node)",
+      "user-agent": this.userAgent,
       ...this.extraHeaders,
     };
   }

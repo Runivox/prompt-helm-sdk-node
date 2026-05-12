@@ -147,8 +147,27 @@ describe("PromptHelm.execute", () => {
     const headers = init.headers as Record<string, string>;
     expect(headers["authorization"]).toBe(`Bearer ${VALID_KEY}`);
     expect(headers["content-type"]).toBe("application/json");
+    expect(headers["user-agent"]).toBe("@prompt-helm/sdk (node)");
     expect(init.body).toBe(
       JSON.stringify({ promptSlug: "welcome", variables: { name: "World" } }),
+    );
+  });
+
+  it("prefixes user-agent with custom userAgent when provided", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ body: sampleResponse }));
+    const client = new PromptHelm({
+      apiKey: VALID_KEY,
+      fetch: fetchMock,
+      userAgent: "my-checkout-service/1.4.2",
+    });
+    await client.execute({ promptSlug: "welcome" });
+
+    const call = fetchMock.mock.calls[0];
+    if (!call) throw new Error("fetch was not called");
+    const [, init] = call as unknown as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(headers["user-agent"]).toBe(
+      "my-checkout-service/1.4.2 @prompt-helm/sdk (node)",
     );
   });
 

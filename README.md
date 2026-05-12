@@ -82,6 +82,7 @@ for await (const event of ph.stream(
 | `baseURL`    | `string`                | `https://api.prompthelm.app`   | Override for self-hosted deployments or staging environments.        |
 | `timeout`    | `number` (ms)           | `60000`                        | Per-request timeout. Aborts the underlying fetch on expiry.          |
 | `maxRetries` | `number`                | `2`                            | Retries on network and 5xx errors. 4xx responses are never retried.  |
+| `userAgent`  | `string`                | `—`                            | Prefix appended to the SDK's User-Agent. Use it to identify the calling app (e.g. `"checkout-service/1.4.2"`). |
 | `headers`    | `Record<string,string>` | `{}`                           | Extra headers merged into every request.                             |
 | `fetch`      | `typeof fetch`          | `globalThis.fetch`             | Inject a custom `fetch` implementation (used in tests).              |
 
