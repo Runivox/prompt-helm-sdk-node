@@ -1,32 +1,35 @@
 import type { ErrorEnvelope } from "./types.js";
 
 export class PromptHelmError extends Error {
+  /** HTTP status code (or the inferred status for SSE error events). */
   public readonly statusCode: number;
-  public readonly code: string | undefined;
-  public readonly correlationId: string | undefined;
+  /** Machine-readable error code from the API envelope, e.g. `VALIDATION_ERROR`. */
+  public readonly errorCode: string | undefined;
+  /** Request correlation id — quote this when contacting PromptHelm support. */
+  public readonly requestId: string | undefined;
 
   constructor(
     statusCode: number,
-    code: string | undefined,
-    correlationId: string | undefined,
+    errorCode: string | undefined,
+    requestId: string | undefined,
     message: string,
   ) {
     super(message);
     this.name = "PromptHelmError";
     this.statusCode = statusCode;
-    this.code = code;
-    this.correlationId = correlationId;
+    this.errorCode = errorCode;
+    this.requestId = requestId;
   }
 }
 
 export class AuthenticationError extends PromptHelmError {
   constructor(
     statusCode: number,
-    code: string | undefined,
-    correlationId: string | undefined,
+    errorCode: string | undefined,
+    requestId: string | undefined,
     message: string,
   ) {
-    super(statusCode, code, correlationId, message);
+    super(statusCode, errorCode, requestId, message);
     this.name = "AuthenticationError";
   }
 }
@@ -34,11 +37,11 @@ export class AuthenticationError extends PromptHelmError {
 export class AuthorizationError extends PromptHelmError {
   constructor(
     statusCode: number,
-    code: string | undefined,
-    correlationId: string | undefined,
+    errorCode: string | undefined,
+    requestId: string | undefined,
     message: string,
   ) {
-    super(statusCode, code, correlationId, message);
+    super(statusCode, errorCode, requestId, message);
     this.name = "AuthorizationError";
   }
 }
@@ -46,11 +49,11 @@ export class AuthorizationError extends PromptHelmError {
 export class RateLimitError extends PromptHelmError {
   constructor(
     statusCode: number,
-    code: string | undefined,
-    correlationId: string | undefined,
+    errorCode: string | undefined,
+    requestId: string | undefined,
     message: string,
   ) {
-    super(statusCode, code, correlationId, message);
+    super(statusCode, errorCode, requestId, message);
     this.name = "RateLimitError";
   }
 }
@@ -58,11 +61,11 @@ export class RateLimitError extends PromptHelmError {
 export class NotFoundError extends PromptHelmError {
   constructor(
     statusCode: number,
-    code: string | undefined,
-    correlationId: string | undefined,
+    errorCode: string | undefined,
+    requestId: string | undefined,
     message: string,
   ) {
-    super(statusCode, code, correlationId, message);
+    super(statusCode, errorCode, requestId, message);
     this.name = "NotFoundError";
   }
 }
@@ -70,11 +73,11 @@ export class NotFoundError extends PromptHelmError {
 export class ApiError extends PromptHelmError {
   constructor(
     statusCode: number,
-    code: string | undefined,
-    correlationId: string | undefined,
+    errorCode: string | undefined,
+    requestId: string | undefined,
     message: string,
   ) {
-    super(statusCode, code, correlationId, message);
+    super(statusCode, errorCode, requestId, message);
     this.name = "ApiError";
   }
 }
@@ -108,28 +111,35 @@ function fallbackMessage(status: number): string {
   return `Request failed with status ${String(status)}.`;
 }
 
+function normalizeMessage(message: string | string[]): string {
+  return Array.isArray(message) ? message.join("; ") : message;
+}
+
 export function parseErrorResponse(
   status: number,
   body: unknown,
 ): PromptHelmError {
   const envelope = isErrorEnvelope(body) ? body : null;
-  const message = envelope?.message ?? fallbackMessage(status);
-  const code = envelope?.code;
-  const correlationId = envelope?.correlationId;
+  const message = envelope
+    ? normalizeMessage(envelope.message)
+    : fallbackMessage(status);
+  const errorCode = envelope?.errorCode;
+  const requestId = envelope?.requestId;
+  const statusCode = envelope?.statusCode ?? status;
 
-  if (status === 401) {
-    return new AuthenticationError(status, code, correlationId, message);
+  if (statusCode === 401) {
+    return new AuthenticationError(statusCode, errorCode, requestId, message);
   }
-  if (status === 403) {
-    return new AuthorizationError(status, code, correlationId, message);
+  if (statusCode === 403) {
+    return new AuthorizationError(statusCode, errorCode, requestId, message);
   }
-  if (status === 404) {
-    return new NotFoundError(status, code, correlationId, message);
+  if (statusCode === 404) {
+    return new NotFoundError(statusCode, errorCode, requestId, message);
   }
-  if (status === 429) {
-    return new RateLimitError(status, code, correlationId, message);
+  if (statusCode === 429) {
+    return new RateLimitError(statusCode, errorCode, requestId, message);
   }
-  return new ApiError(status, code, correlationId, message);
+  return new ApiError(statusCode, errorCode, requestId, message);
 }
 
 function isErrorEnvelope(value: unknown): value is ErrorEnvelope {
@@ -137,9 +147,14 @@ function isErrorEnvelope(value: unknown): value is ErrorEnvelope {
     return false;
   }
   const record = value as Record<string, unknown>;
+  const message = record["message"];
+  const messageOk =
+    typeof message === "string" ||
+    (Array.isArray(message) &&
+      message.every((item) => typeof item === "string"));
   return (
     typeof record["statusCode"] === "number" &&
-    typeof record["error"] === "string" &&
-    typeof record["message"] === "string"
+    typeof record["errorCode"] === "string" &&
+    messageOk
   );
 }

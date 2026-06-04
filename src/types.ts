@@ -51,12 +51,17 @@ export interface StreamErrorEvent {
 
 export type StreamEvent = StreamChunkEvent | StreamDoneEvent | StreamErrorEvent;
 
+/**
+ * JSON error envelope returned by the PromptHelm API for non-2xx responses.
+ * All five fields are always present on the wire; `message` may be a single
+ * string or an array of validation messages.
+ */
 export interface ErrorEnvelope {
   statusCode: number;
-  error: string;
-  message: string;
-  code?: string;
-  correlationId?: string;
+  errorCode: string;
+  message: string | string[];
+  timestamp: string;
+  requestId: string;
 }
 
 export interface RequestOptions {

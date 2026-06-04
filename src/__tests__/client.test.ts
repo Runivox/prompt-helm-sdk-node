@@ -147,7 +147,9 @@ describe("PromptHelm.execute", () => {
     const headers = init.headers as Record<string, string>;
     expect(headers["authorization"]).toBe(`Bearer ${VALID_KEY}`);
     expect(headers["content-type"]).toBe("application/json");
-    expect(headers["user-agent"]).toBe("@prompt-helm/sdk (node)");
+    expect(headers["user-agent"]).toMatch(
+      /^prompt-helm-sdk-node\/\d+\.\d+\.\d+/,
+    );
     expect(init.body).toBe(
       JSON.stringify({ promptSlug: "welcome", variables: { name: "World" } }),
     );
@@ -166,8 +168,8 @@ describe("PromptHelm.execute", () => {
     if (!call) throw new Error("fetch was not called");
     const [, init] = call as unknown as [string, RequestInit];
     const headers = init.headers as Record<string, string>;
-    expect(headers["user-agent"]).toBe(
-      "my-checkout-service/1.4.2 @prompt-helm/sdk (node)",
+    expect(headers["user-agent"]).toMatch(
+      /^my-checkout-service\/1\.4\.2 prompt-helm-sdk-node\/\d+\.\d+\.\d+/,
     );
   });
 
@@ -177,8 +179,10 @@ describe("PromptHelm.execute", () => {
         status: 401,
         body: {
           statusCode: 401,
-          error: "Unauthorized",
+          errorCode: "UNAUTHORIZED",
           message: "Invalid API key",
+          timestamp: "2026-06-05T00:00:00.000Z",
+          requestId: "req-401",
         },
       }),
     );
@@ -187,9 +191,12 @@ describe("PromptHelm.execute", () => {
       fetch: fetchMock,
       maxRetries: 3,
     });
-    await expect(client.execute({ promptSlug: "x" })).rejects.toBeInstanceOf(
-      AuthenticationError,
-    );
+    await expect(client.execute({ promptSlug: "x" })).rejects.toMatchObject({
+      name: "AuthenticationError",
+      errorCode: "UNAUTHORIZED",
+      requestId: "req-401",
+      statusCode: 401,
+    });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -199,8 +206,10 @@ describe("PromptHelm.execute", () => {
         status: 403,
         body: {
           statusCode: 403,
-          error: "Forbidden",
+          errorCode: "FORBIDDEN",
           message: "No access",
+          timestamp: "2026-06-05T00:00:00.000Z",
+          requestId: "req-403",
         },
       }),
     );
@@ -216,8 +225,10 @@ describe("PromptHelm.execute", () => {
         status: 404,
         body: {
           statusCode: 404,
-          error: "Not Found",
+          errorCode: "PROMPT_VERSION_NOT_FOUND",
           message: "Missing",
+          timestamp: "2026-06-05T00:00:00.000Z",
+          requestId: "req-404",
         },
       }),
     );
@@ -233,8 +244,10 @@ describe("PromptHelm.execute", () => {
         status: 429,
         body: {
           statusCode: 429,
-          error: "Too Many Requests",
+          errorCode: "TOO_MANY_REQUESTS",
           message: "Slow down",
+          timestamp: "2026-06-05T00:00:00.000Z",
+          requestId: "req-429",
         },
       }),
     );
@@ -255,8 +268,10 @@ describe("PromptHelm.execute", () => {
         status: 500,
         body: {
           statusCode: 500,
-          error: "Internal Server Error",
+          errorCode: "INTERNAL_ERROR",
           message: "Boom",
+          timestamp: "2026-06-05T00:00:00.000Z",
+          requestId: "req-500",
         },
       }),
     );
@@ -280,8 +295,10 @@ describe("PromptHelm.execute", () => {
           status: 502,
           body: {
             statusCode: 502,
-            error: "Bad Gateway",
+            errorCode: "INTERNAL_ERROR",
             message: "Upstream",
+            timestamp: "2026-06-05T00:00:00.000Z",
+            requestId: "req-502",
           },
         });
       }
@@ -416,7 +433,12 @@ describe("PromptHelm.stream", () => {
           events.push(event);
         }
       })(),
-    ).rejects.toBeInstanceOf(ApiError);
+    ).rejects.toMatchObject({
+      name: "ApiError",
+      errorCode: "UPSTREAM_FAILURE",
+      requestId: "req-9",
+      message: "Provider error",
+    });
     expect(events).toHaveLength(1);
   });
 
@@ -425,8 +447,10 @@ describe("PromptHelm.stream", () => {
       new Response(
         JSON.stringify({
           statusCode: 401,
-          error: "Unauthorized",
+          errorCode: "UNAUTHORIZED",
           message: "bad token",
+          timestamp: "2026-06-05T00:00:00.000Z",
+          requestId: "req-stream-401",
         }),
         {
           status: 401,
