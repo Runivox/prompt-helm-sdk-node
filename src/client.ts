@@ -10,6 +10,7 @@ import {
 } from "./errors.js";
 import { withRetry } from "./retry.js";
 import { readSseStream } from "./stream.js";
+import { SDK_USER_AGENT } from "./version.js";
 import type {
   ExecuteRequest,
   ExecuteResponse,
@@ -37,7 +38,7 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_MAX_RETRIES = 2;
 const API_KEY_LENGTH = 36;
 const API_KEY_PREFIX = "phk_";
-const SDK_UA = "@prompt-helm/sdk (node)";
+const SDK_UA = SDK_USER_AGENT;
 
 export class PromptHelm {
   private readonly apiKey: string;
