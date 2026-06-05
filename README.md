@@ -44,7 +44,9 @@ console.log(`Tokens: ${result.totalTokens}, cost: $${result.cost.toFixed(6)}`);
 ```ts
 import { PromptHelm } from "@prompt-helm/sdk";
 
-const ph = new PromptHelm({ apiKey: "<your-api-token>" });
+const ph = new PromptHelm({
+  apiKey: process.env.PROMPTHELM_API_KEY ?? "<your-api-token>",
+});
 
 for await (const event of ph.stream({
   promptSlug: "release-notes",
@@ -79,12 +81,35 @@ for await (const event of ph.stream(
 | Option       | Type                    | Default                        | Description                                                          |
 | ------------ | ----------------------- | ------------------------------ | -------------------------------------------------------------------- |
 | `apiKey`     | `string`                | required                       | PromptHelm API key in the form `phk_<32 hex>`.                       |
-| `baseURL`    | `string`                | `https://api.prompthelm.app`   | Override for self-hosted deployments or staging environments.        |
+| `baseURL`    | `string`                | `https://api.prompthelm.app`   | Override the API host for self-hosted or non-production deployments.  |
 | `timeout`    | `number` (ms)           | `60000`                        | Per-request timeout. Aborts the underlying fetch on expiry.          |
 | `maxRetries` | `number`                | `2`                            | Retries on network and 5xx errors. 4xx responses are never retried.  |
 | `userAgent`  | `string`                | `—`                            | Prefix appended to the SDK's User-Agent. Use it to identify the calling app (e.g. `"checkout-service/1.4.2"`). |
 | `headers`    | `Record<string,string>` | `{}`                           | Extra headers merged into every request.                             |
 | `fetch`      | `typeof fetch`          | `globalThis.fetch`             | Inject a custom `fetch` implementation (used in tests).              |
+
+## Retries, timeouts & streaming
+
+This is the reference SDK that the other-language clients mirror, so its
+transport behavior is deliberately precise:
+
+- **Retries** apply to `execute` only. The client retries network failures and
+  `5xx` responses with exponential backoff plus jitter, up to `maxRetries`
+  (default `2`). `4xx` responses (`400`/`401`/`403`/`404`/`429`) are **never**
+  retried, nor are timeouts or caller-initiated aborts. `stream` is not retried
+  automatically — re-issue the call yourself if a stream fails.
+- **Timeouts** are enforced per request via an internal `AbortController`. When
+  `timeout` (default `60000` ms) elapses the underlying `fetch` is aborted and a
+  `TimeoutError` is thrown. For streaming, the timeout covers establishing the
+  response; long-lived streams that keep emitting events are not cut off by it.
+- **Cancellation**: pass `options.signal` (an `AbortSignal`) to either method.
+  Aborting cancels the in-flight HTTP request; for `stream` the iterator stops
+  cleanly and the connection is released.
+- **Streaming protocol**: `stream` consumes Server-Sent Events from
+  `POST /api/v1/gateway/stream`. Each `data:` frame is a JSON `StreamEvent`
+  (`chunk` | `done` | `error`). The iterator yields `chunk` and `done` events;
+  an `error` event is thrown as an `ApiError` carrying `errorCode`, `message`,
+  and `requestId`. The stream always ends after a `done` or `error` event.
 
 ## Error handling
 
@@ -101,7 +126,9 @@ import {
   TimeoutError,
 } from "@prompt-helm/sdk";
 
-const ph = new PromptHelm({ apiKey: "<your-api-token>" });
+const ph = new PromptHelm({
+  apiKey: process.env.PROMPTHELM_API_KEY ?? "<your-api-token>",
+});
 
 try {
   const result = await ph.execute({ promptSlug: "welcome-email" });
@@ -124,7 +151,7 @@ try {
 }
 ```
 
-Every `PromptHelmError` exposes `statusCode`, `code`, and `correlationId` so failures can be filed against PromptHelm support with full traceability.
+Every `PromptHelmError` exposes `statusCode`, `errorCode`, and `requestId` so failures can be filed against PromptHelm support with full traceability. Quote the `requestId` when contacting support — it correlates your call to the server-side execution log.
 
 ## API reference
 
@@ -156,7 +183,7 @@ Same request shape as `execute`. Yields:
 - `{ type: "chunk", content: string }` — incremental output.
 - `{ type: "done", inputTokens, outputTokens, totalTokens, cost, model, latencyMs }` — final usage and pricing.
 
-If the server emits `{ type: "error" }`, the iterator throws an `ApiError`. If the external `AbortSignal` fires, the iterator stops and the underlying HTTP request is cancelled.
+If the server emits `{ type: "error", errorCode, message, requestId }`, the iterator throws an `ApiError` exposing those fields. If the external `AbortSignal` fires, the iterator stops and the underlying HTTP request is cancelled.
 
 ## Versioning
 
