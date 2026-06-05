@@ -39,10 +39,12 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      # No registry-url: it makes setup-node write a placeholder _authToken
+      # into .npmrc, which forces npm down the token path and blocks OIDC
+      # trusted publishing. Without it, npm falls back to OIDC.
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          registry-url: "https://registry.npmjs.org"
           cache: npm
       # Trusted publishing (OIDC) needs npm >= 11.5.1.
       - run: npm install -g npm@latest
